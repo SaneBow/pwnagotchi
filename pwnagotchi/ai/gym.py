@@ -6,6 +6,7 @@ import numpy as np
 import pwnagotchi.ai.featurizer as featurizer
 import pwnagotchi.ai.reward as reward
 from pwnagotchi.ai.parameter import Parameter
+import pwnagotchi.mesh.wifi as wifi
 
 
 class Environment(gym.Env):
@@ -36,12 +37,12 @@ class Environment(gym.Env):
 
         # see https://github.com/evilsocket/pwnagotchi/issues/583
         self._supported_channels = agent.supported_channels()
-        self._extended_spectrum = any(ch > 140 for ch in self._supported_channels)
-        self._histogram_size, self._observation_shape = featurizer.describe(self._extended_spectrum)
+        wifi.NumChannels = len(self._supported_channels)
+        self._histogram_size, self._observation_shape = featurizer.describe()
 
         Environment.params += [
-            Parameter('_channel_%d' % ch, min_value=0, max_value=1, meta=ch + 1) for ch in
-            range(self._histogram_size) if ch + 1 in self._supported_channels
+            Parameter('_channel_%d' % ch, min_value=0, max_value=1, meta=self._supported_channels[ch]) for ch in
+            range(self._histogram_size)
         ]
 
         self.last = {
@@ -124,7 +125,7 @@ class Environment(gym.Env):
     def _render_histogram(self, hist):
         for ch in range(self._histogram_size):
             if hist[ch]:
-                logging.info("      CH %d: %s" % (ch + 1, hist[ch]))
+                logging.info("      CH %d: %s" % (self._supported_channels[ch], hist[ch]))
 
     def render(self, mode='human', close=False, force=False):
         # when using a vectorialized environment, render gets called twice
