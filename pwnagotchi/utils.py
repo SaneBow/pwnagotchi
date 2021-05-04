@@ -298,11 +298,12 @@ def total_unique_handshakes(path):
 
 def iface_channels(ifname):
     channels = []
-    output = subprocess.getoutput("/sbin/iwlist %s freq" % ifname)
+    output = subprocess.getoutput("""iw phy `iw dev %s info|gawk '/wiphy/ {printf "phy" $2}'` channels""" % ifname)
     for line in output.split("\n"):
         line = line.strip()
-        if line.startswith("Channel "):
-            channels.append(int(line.split()[1]))
+        chs = re.findall('\[(\d+)\]', line)
+        if len(chs):
+            channels.append(int(chs[0]))
     return channels
 
 

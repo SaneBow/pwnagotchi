@@ -65,6 +65,7 @@ class Epoch(object):
         self._epoch_data = {}
         self._epoch_data_ready = threading.Event()
         self._reward = RewardFunction()
+        self._supported_channels = config['main']['channels']
 
     def wait_for_epoch_data(self, with_observation=True, timeout=None):
         # if with_observation:
@@ -99,19 +100,20 @@ class Epoch(object):
         peers_per_chan = [0.0] * wifi.NumChannels
 
         for ap in aps:
-            ch_idx = ap['channel'] - 1
             try:
+                ch_idx = self._supported_channels.index(ap['channel'])
                 aps_per_chan[ch_idx] += 1.0
                 sta_per_chan[ch_idx] += len(ap['clients'])
-            except IndexError:
-                logging.error("got data on channel %d, we can store %d channels" % (ap['channel'], wifi.NumChannels))
+            except (IndexError, ValueError) as e:
+                logging.error("got data on channel %d, supporeted channels are %s" % (ap['channel'], self._supported_channels))
 
         for peer in peers:
             try:
-                peers_per_chan[peer.last_channel - 1] += 1.0
-            except IndexError:
+                ch_idx = self._supported_channels.index(peer.last_channel)
+                peers_per_chan[ch_idx] += 1.0
+            except (IndexError, ValueError) as e:
                 logging.error(
-                    "got peer data on channel %d, we can store %d channels" % (peer.last_channel, wifi.NumChannels))
+                    "got data on channel %d, supporeted channels are %s" % (peer.last_channel, self._supported_channels))
 
         # normalize
         aps_per_chan = [e / num_aps for e in aps_per_chan]
